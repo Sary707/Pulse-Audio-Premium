@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Pulse Audio Player</title>
+
+<!-- استيراد خط Tajawal من Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#090b11;
+  --bg2:#101622;
+  --panel:rgba(255,255,255,.08);
+  --panel2:rgba(255,255,255,.05);
+  --line:rgba(255,255,255,.09);
+  --text:#f5f8ff;
+  --muted:#adb7c9;
+  --accent:#63b1ff;
+  --accent2:#7b6fff;
+  --good:#3ddc97;
+  --warn:#ffb24c;
+  --danger:#ff6f91;
+  --glass:blur(24px) saturate(150%);
+  --shadow:0 18px 60px rgba(0,0,0,.45);
+  --r1:16px;
+  --r2:22px;
+  --r3:30px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+html,body{height:100%; width: 100%; margin: 0; padding: 0;}
+body{
+  margin:0;
+  font-family: "Tajawal", "Segoe UI", Tahoma, Arial, sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(99,177,255,.15), transparent 28%),
+    radial-gradient(circle at 85% 10%, rgba(123,111,255,.20), transparent 26%),
+    linear-gradient(180deg, #0f1420 0%, #090b11 100%);
+  color:var(--text);
+  overflow:hidden;
+  letter-spacing: 0.2px;
+}
+button,input,select,textarea{font-family: inherit;}
+.shell{height:100%; display:grid; place-items:center; padding:16px;}
+
+/* إعدادات الهاتف الوهمي */
+.phone{
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  max-height: 920px;
+  position:relative;
+  border-radius: 44px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:0 30px 100px rgba(0,0,0,.6);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
+    linear-gradient(180deg,#121826,#0a0d13 62%);
+  display: flex;
+  flex-direction: column;
+}
+
+/* الاستجابة للهواتف الحقيقية لتجنب قص الأزرار */
+@media (max-width: 450px) {
+  .shell { padding: 0; }
+  .phone { 
+    max-width: 100%; 
+    max-height: 100%; 
+    border-radius: 0; 
+    border: none; 
+    box-shadow: none; 
+  }
+}
+
+.camera{
+  position:absolute;top:11px;left:50%;transform:translateX(-50%);
+  width:122px;height:34px;border-radius:999px;background:#000;z-index:25;
+  box-shadow: inset 0 0 6px rgba(255,255,255,0.08), 0 5px 15px rgba(0,0,0,0.4);
+}
+.status{
+  position:absolute;top:0;left:0;right:0;padding:16px 28px 10px;z-index:24;
+  display:flex;align-items:center;justify-content:space-between;font-size:15px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Tajawal", sans-serif;
+  font-weight: 700; letter-spacing: 0.3px;
+}
+.status .right{display:flex;gap:7px;align-items:center; margin-top: 2px;}
+.network-type{font-size: 13px;font-weight: 800;letter-spacing: 0.5px; margin-left: 2px;}
+.signal-bars{display:flex;align-items:flex-end;gap:2.5px;height:11px; margin-left: 4px;}
+.signal-bars .bar{width:3.5px;border-radius:4px;background:rgba(255,255,255,0.25);}
+.signal-bars .bar.full{background:#fff;}
+.signal-bars .bar:nth-child(1){height:4.5px;}
+.signal-bars .bar:nth-child(2){height:6.5px;}
+.signal-bars .bar:nth-child(3){height:8.5px;}
+.signal-bars .bar:nth-child(4){height:11px;}
+.battery-ios{
+  width:24px;height:12px;border:1px solid rgba(255,255,255,0.4);
+  border-radius:4px;padding:1.5px;position:relative;display:flex;
+}
+.battery-ios::before{
+  content:"";position:absolute;left:-3.5px;top:50%;transform:translateY(-50%);
+  width:2.5px;height:4px;background:rgba(255,255,255,0.4);border-radius:2px 0 0 2px;
+}
+.battery-level{height:100%;width:80%;background:#fff;border-radius:1.5px;}
+
+.app{height:100%;display:flex;flex-direction:column;position:relative;flex: 1;}
+.hero{padding:66px 18px 10px; flex-shrink: 0;}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.h1{font-size:32px;font-weight:800;line-height:1.2;margin:0}
+.row{display:flex;gap:10px;align-items:center}
+
+.icon{
+  width:46px;height:46px;border:none;border-radius:50%;
+  color:var(--text);background:rgba(255,255,255,.09);backdrop-filter:var(--glass);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  cursor:pointer;transition:all .25s ease;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.icon:active{transform:scale(.92); background:rgba(255,255,255,.15);}
+
+/* تصميم الأيقونات العلوية لتكون زرقاء وعصرية */
+.top .row .icon {
+  color: var(--accent); /* لون أزرق مضيء */
+  background: rgba(99, 177, 255, 0.12); /* خلفية زرقاء زجاجية */
+  border: 1px solid rgba(99, 177, 255, 0.25);
+  box-shadow: 0 8px 20px rgba(99, 177, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.top .row .icon:active {
+  transform: translateY(1px) scale(0.92);
+  background: rgba(99, 177, 255, 0.25);
+  box-shadow: 0 4px 10px rgba(99, 177, 255, 0.1);
+}
+
+.search{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:22px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.06);backdrop-filter:var(--glass);
+  transition: all 0.3s ease;
+}
+.search:focus-within{
+  background:rgba(255,255,255,.1); border-color: rgba(99,177,255,.4);
+}
+.search input{flex:1;background:transparent;border:none;outline:none;color:var(--text); font-size: 15px;}
+.search input::placeholder{color:#95a1b4}
+
+.tabs{display:flex;gap:10px;padding:12px 18px 12px;overflow-x:auto;scrollbar-width:none; scroll-behavior: smooth; flex-shrink: 0;}
+.tabs::-webkit-scrollbar{display:none}
+.tabs::after { content: ''; padding-right: 18px; }
+
+.chip{
+  border:none;white-space:nowrap;padding:10px 18px;border-radius:999px;cursor:pointer;
+  color:var(--text);background:rgba(255,255,255,.06);font-weight:700; font-size: 14px;
+  transition: all 0.3s ease;
+}
+.chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 20px rgba(99,177,255,.25);}
+
+.content{flex:1;overflow-y:auto;padding:0 18px 120px;scrollbar-width:none; scroll-behavior: smooth;}
+.content::-webkit-scrollbar{display:none}
+
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border:1px solid var(--line);border-radius:var(--r3);padding:18px;box-shadow:var(--shadow);backdrop-filter:var(--glass)
+}
+.hero-player{position:relative;overflow:hidden;margin-bottom:20px}
+.hero-player:after{
+  content:"";position:absolute;inset:auto auto -60px -40px;width:180px;height:180px;border-radius:50%;
+  background:radial-gradient(circle, rgba(99,177,255,.25), transparent 60%);pointer-events:none
+}
+
+.player-top{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+.cover{
+  width:96px;height:96px;border-radius:26px;flex-shrink:0;overflow:hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(123,111,255,.6), transparent 34%),
+    radial-gradient(circle at 80% 80%, rgba(99,177,255,.55), transparent 38%),
+    linear-gradient(145deg,#27334d,#131927);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.cover.big{position:relative}
+.cover.big:before,.cover.big:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
+.cover.big:before{inset:14px}
+.cover.big:after{inset:32px}
+
+.player-meta{ flex: 1; min-width: 0; }
+.player-meta small{display:block;color:#d2dbeb;font-size:12px;margin-bottom:6px; font-weight: 500;}
+.player-meta h2{margin:0;font-size:22px;line-height:1.2; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.player-meta p{margin:6px 0 0;color:var(--muted);font-size:14px; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.badge{
+  padding:5px 10px;border-radius:999px;font-size:11px; font-weight: 700; background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.08)
+}
+
+.canvas-wrap{height:80px;background:rgba(255,255,255,.03);border-radius:20px;border:1px solid rgba(255,255,255,.05);overflow:hidden}
+#visualizer{width:100%;height:100%;display:block}
+
+.progress-wrap{margin-top:16px}
+.progress{height:8px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;position:relative;cursor:pointer}
+.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2)); transition: width 0.1s linear;}
+.progress span::after{
+  content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(255,255,255,0.8);
+}
+.times{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:#ced6e6; font-weight: 500;}
+
+.controls{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:16px}
+.cluster{display:flex;gap:12px;align-items:center}
+.circle{
+  width:48px;height:48px;border-radius:50%;border:none;cursor:pointer;
+  color:var(--text);background:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all 0.2s;
+}
+.circle:active{ transform: scale(0.9); background:rgba(255,255,255,.15); }
+.circle.primary{
+  width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 10px 25px rgba(99,177,255,.35);font-size:22px; padding-left: 4px; 
+}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);border-radius:22px;padding:16px 12px; text-align: center;
+}
+.stat span{display:block;color:var(--muted);font-size:13px;margin-bottom:6px; font-weight: 500;}
+.stat strong{font-size:20px; font-weight: 800;}
+
+.head{display:flex;justify-content:space-between;align-items:center;margin:24px 4px 16px}
+.head h3{margin:0;font-size:20px; font-weight: 800;}
+.head button,.head a{
+  border:none;background:rgba(255,255,255,0.08);color:#b8cbff;text-decoration:none;cursor:pointer;
+  padding: 8px 14px; border-radius: 999px; font-family: inherit; font-size: 13px; font-weight: 700; transition: 0.2s;
+}
+.head button:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
+
+.list{display:flex;flex-direction:column;gap:10px}
+.track{
+  display:flex;gap:14px;align-items:center;padding:12px;border-radius:22px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04);cursor:pointer;
+  transition: all 0.2s ease;
+}
+.track:active{ transform: scale(0.98); background: rgba(255,255,255,.08); }
+.track.active{border-color: rgba(99,177,255,.4);background:linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,.03));}
+
+.thumb{
+  width:56px;height:56px;border-radius:18px;flex-shrink:0;background:
+  radial-gradient(circle at 25% 25%, rgba(123,111,255,.55), transparent 34%),
+  radial-gradient(circle at 75% 75%, rgba(99,177,255,.5), transparent 36%),
+  linear-gradient(145deg,#283552,#111826)
+}
+.main{flex:1;min-width:0}
+.main h4{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; font-weight: 700;}
+.main p{margin:6px 0 0;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.meta{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+
+.q{
+  padding:4px 8px;border-radius:6px;font-size:10px;font-weight: 800; background:rgba(61,220,151,.15);color:#90f1c5;border:1px solid rgba(61,220,151,.2)
+}
+
+.nav{
+  position:absolute;left:0;right:0;bottom:0;padding:10px 16px 24px;
+  background:linear-gradient(180deg, rgba(10,12,18,0) 0%, rgba(10,12,18,.9) 40%, rgba(10,12,18,1) 100%);
+  z-index:10;
+}
+.nav .wrap{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;border-radius:30px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.05);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.nav button{
+  min-height:56px;border:none;border-radius:22px;background:transparent;color:#8a99b5;
+  display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;cursor:pointer;
+  transition: all 0.3s ease; font-weight: 700; font-size: 12px;
+}
+.nav button span:first-child{font-size: 20px;}
+.nav button.active{color:#fff;background:rgba(255,255,255,.1); box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);}
+
+.handle{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:130px;height:5px;border-radius:999px;background:rgba(255,255,255,.2);z-index:15}
+
+/* قوائم الـ Sheet */
+.sheet{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;
+  z-index:100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+}
+.sheet.open{opacity: 1; pointer-events: auto;}
+.sheet-card{
+  width:min(430px,100%);max-height:85vh;overflow-y:auto;border-radius:32px 32px 0 0;padding:24px 20px 30px;
+  background:linear-gradient(180deg,#151b29,#0d111a 65%);
+  border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -20px 60px rgba(0,0,0,.6);
+  transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sheet.open .sheet-card { transform: translateY(0); }
+
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:20px}
+.sheet-head h3{margin:0; font-size: 22px; font-weight: 800;}
+.field{
+  width:100%;padding:16px;border-radius:20px;border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);color:var(--text);outline:none; font-size: 16px; font-weight: 500;
+  transition: 0.3s;
+}
+.field:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
+
+.stack{display:flex;flex-direction:column;gap:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.range-row{display:grid;grid-template-columns:50px 1fr 55px;gap:10px;align-items:center; font-size: 13px; font-weight: 700; color: var(--muted);}
+.range-row input{width:100%; accent-color: var(--accent);}
+.eq-list{display:flex;flex-direction:column;gap:14px; background: rgba(255,255,255,0.03); padding: 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);}
+
+.preset-row{display:flex;gap:8px;flex-wrap:wrap}
+.preset{padding:10px 14px;border:1px solid rgba(255,255,255,0.08);border-radius:999px;background:rgba(255,255,255,.05);color:var(--text);cursor:pointer; font-weight: 700; font-size: 13px; transition: 0.2s;}
+.preset:active{background: rgba(255,255,255,0.15); transform: scale(0.95);}
+
+.btn{
+  border:none;border-radius:20px;padding:16px;background:rgba(255,255,255,.08);color:var(--text);
+  cursor:pointer; font-weight: 700; font-size: 15px; transition: all 0.2s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:active{ transform: scale(0.96); background:rgba(255,255,255,.12); }
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 20px rgba(99,177,255,.25); color: #fff;}
+
+.notice{
+  padding:14px 16px;border-radius:20px;background:rgba(99,177,255,.1);border:1px solid rgba(99,177,255,.2);
+  color:#d8e0ee;font-size:14px;line-height:1.6; font-weight: 500;
+}
+.taglist{display:flex;gap:8px;flex-wrap:wrap}
+
+.empty{
+  text-align:center;padding:40px 20px;border-radius:24px;background:rgba(255,255,255,.03);
+  border:1px dashed rgba(255,255,255,.15);color:var(--muted); font-size: 15px; line-height: 1.6;
+}
+
+.toast{
+  position:absolute;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);
+  min-width:200px;max-width:85%;padding:14px 20px;border-radius:999px;background:rgba(20,25,35,.95);
+  border:1px solid rgba(255,255,255,.15);backdrop-filter:blur(20px);box-shadow:var(--shadow);
+  display:flex; align-items: center; justify-content: center; text-align: center; font-weight: 700; font-size: 14px;
+  z-index:200; opacity: 0; pointer-events: none; transition: all 0.3s ease;
+}
+.toast.show{opacity: 1; transform: translateX(-50%) translateY(0);}
+.hidden{display:none !important;}
+
+@media (max-width:420px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .grid .stat:last-child{grid-column:span 2}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="phone">
+    <div class="camera"></div>
+    <div class="status">
+      <div id="clockText">18:27</div>
+      <div class="right">
+        <span class="network-type">5G</span>
+        <div class="signal-bars">
+          <span class="bar full"></span>
+          <span class="bar full"></span>
+          <span class="bar full"></span>
+          <span class="bar full"></span>
+        </div>
+        <div class="battery-ios">
+          <div class="battery-level"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="app">
+      <section class="hero">
+        <div class="top">
+          <div>
+            <h1 class="h1">Pulse Audio Player</h1>
+          </div>
+          <div class="row">
+            <button class="icon" id="importBtn" title="استيراد ملفات">
+              <!-- أيقونة "إضافة موسيقى" الجديدة والعصرية -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 18V5l10-2v11"></path>
+                <circle cx="8" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+                <path d="M2 10h6"></path>
+                <path d="M5 7v6"></path>
+              </svg>
+            </button>
+            <button class="icon" id="settingsBtn" title="الإعدادات">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="search">
+          <span>🔎</span>
+          <input id="searchInput" placeholder="ابحث في الأغاني والفنانين...">
+          <button class="icon" id="voiceBtn" style="width:36px;height:36px;font-size:16px">🎵</button>
+        </div>
+        <input id="fileInput" class="hidden" type="file" multiple accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.alac,.oga,.weba">
+      </section>
+
+      <div class="tabs" id="tabBar">
+        <button class="chip active" data-filter="all">الكل</button>
+        <button class="chip" data-filter="favorites">المفضلة</button>
+        <button class="chip" data-filter="recent">الأخيرة</button>
+        <button class="chip" data-filter="playlists">القوائم</button>
+      </div>
+
+      <main class="content">
+        <section class="card hero-player">
+          <div class="player-top">
+            <div class="cover big" id="heroCover"></div>
+            <div class="player-meta">
+              <small id="npQuality">جاهز للاستيراد والتشغيل</small>
+              <h2 id="npTitle">لا توجد أغنية قيد التشغيل</h2>
+              <p id="npArtist">قم بإضافة ملفات صوت لتفعيل المكتبة</p>
+              <div class="badges">
+                <span class="badge" id="badgeFormat">Local</span>
+                <span class="badge" id="badgeEq">EQ</span>
+                <span class="badge" id="badgeMode">Mode</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="canvas-wrap"><canvas id="visualizer"></canvas></div>
+
+          <div class="progress-wrap">
+            <div class="progress" id="seekBar"><span id="seekFill"></span></div>
+            <div class="times">
+              <span id="currentTime">00:00</span>
+              <span id="totalTime">00:00</span>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="cluster">
+              <button class="circle" id="repeatBtn" title="تكرار">🔁</button>
+              <button class="circle" id="shuffleBtn" title="خلط">🔀</button>
+            </div>
+            <div class="cluster">
+              <button class="circle" id="prevBtn" title="السابق">⏮</button>
+              <button class="circle primary" id="playBtn" title="تشغيل وإيقاف">▶</button>
+              <button class="circle" id="nextBtn" title="التالي">⏭</button>
+            </div>
+            <div class="cluster">
+              <button class="circle" id="favBtn" title="مفضلة">♡</button>
+              <button class="circle" id="queueBtn" title="الصف">☰</button>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid">
+          <div class="stat"><span>المكتبة</span><strong id="statTracks">0</strong></div>
+          <div class="stat"><span>المدة</span><strong id="statDuration">00:00</strong></div>
+          <div class="stat"><span>القوائم</span><strong id="statPlaylists">0</strong></div>
+        </div>
+
+        <div class="head">
+          <h3 id="sectionTitle">المكتبة</h3>
+          <div class="row">
+            <button id="newPlaylistBtn">قائمة جديدة</button>
+            <button id="clearDbBtn">مسح الكل</button>
+          </div>
+        </div>
+
+        <div id="playlistArea" class="list hidden"></div>
+        <div id="trackList" class="list"></div>
+      </main>
+
+      <nav class="nav">
+        <div class="wrap">
+          <button class="active" data-nav="home"><span>⌂</span><span>الرئيسية</span></button>
+          <button data-nav="library"><span>♫</span><span>المكتبة</span></button>
+          <button data-nav="queue"><span>▤</span><span>الصف</span></button>
+          <button data-nav="sound"><span>⚙</span><span>الصوت</span></button>
+        </div>
+      </nav>
+
+      <div class="handle"></div>
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-card">
+    <div class="sheet-head">
+      <h3 id="sheetTitle">لوحة التحكم</h3>
+      <button class="btn" style="padding: 10px 20px;" id="closeSheet">إغلاق</button>
+    </div>
+    <div id="sheetContent"></div>
+  </div>
+</div>
+
+<audio id="audio" preload="metadata"></audio>
+
+<script>
+const bands = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
+const presets = {
+  flat:[0,0,0,0,0,0,0,0,0,0],
+  bass:[5,4,3,2,1,0,-1,-1,0,1],
+  vocal:[-1,-1,0,2,3,4,3,2,0,-1],
+  bright:[-2,-1,0,0,1,2,3,4,4,3],
+  night:[3,2,1,1,0,-1,-1,-2,-2,-2]
+}
+const state = {
+  tracks:[],
+  playlists:[],
+  settings:{
+    volume:0.9,
+    speed:1,
+    repeat:'all',
+    shuffle:false,
+    eq:[0,0,0,0,0,0,0,0,0,0],
+    crossfade:true,
+    accent:'blue'
+  },
+  ui:{
+    filter:'all',
+    query:'',
+    currentTrackId:null,
+    queue:[],
+    currentIndex:0,
+    ab:{enabled:false,a:null,b:null},
+    sleepAt:null
+  }
+}
+const refs = {}
+let db = null
+let objectUrl = null
+let audioCtx = null
+let sourceNode = null
+let analyser = null
+let gainNode = null
+let filters = []
+let visId = null
+
+function $(id){ return document.getElementById(id) }
+function saveLocal(){
+  const safe = {
+    playlists: state.playlists,
+    settings: state.settings,
+    ui: {
+      filter: state.ui.filter,
+      query: state.ui.query,
+      currentTrackId: state.ui.currentTrackId,
+      queue: state.ui.queue,
+      currentIndex: state.ui.currentIndex,
+      ab: state.ui.ab,
+      sleepAt: state.ui.sleepAt
+    }
+  }
+  localStorage.setItem('pulse-audio-state-v1', JSON.stringify(safe))
+}
+function loadLocal(){
+  const raw = localStorage.getItem('pulse-audio-state-v1')
+  if(!raw) return
+  try{
+    const data = JSON.parse(raw)
+    state.playlists = Array.isArray(data.playlists) ? data.playlists : []
+    state.settings = Object.assign(state.settings, data.settings || {})
+    state.ui = Object.assign(state.ui, data.ui || {})
+  }catch(e){}
+}
+function uid(){
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8)
+}
+function toast(msg){
+  const t = $('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  clearTimeout(toast.timer)
+  toast.timer = setTimeout(() => t.classList.remove('show'), 2000)
+}
+function formatTime(sec){
+  if(!isFinite(sec) || sec < 0) return '00:00'
+  const s = Math.floor(sec % 60).toString().padStart(2,'0')
+  const m = Math.floor(sec / 60).toString().padStart(2,'0')
+  const h = Math.floor(sec / 3600)
+  if(h > 0) return String(h).padStart(2,'0') + ':' + Math.floor((sec % 3600) / 60).toString().padStart(2,'0') + ':' + s
+  return m + ':' + s
+}
+function extOf(name){
+  const parts = name.split('.')
+  return parts.length > 1 ? parts.pop().toLowerCase() : ''
+}
+function isLossless(track){
+  return ['flac','wav','alac','aiff','aif'].includes(track.ext)
+}
+function isHiRes(track){
+  return ['flac','wav','alac','aiff','aif','dsd','dsf'].includes(track.ext)
+}
+function titleFromFile(name){
+  const base = name.includes('.') ? name.slice(0, name.lastIndexOf('.')) : name
+  if(base.includes(' - ')){
+    const parts = base.split(' - ')
+    return {artist: parts[0].trim(), title: parts.slice(1).join(' - ').trim()}
+  }
+  return {artist:'فنان غير معروف', title:base}
+}
+function openDb(){
+  return new Promise((resolve,reject) => {
+    const req = indexedDB.open('pulse-audio-db-v1', 1)
+    req.onupgradeneeded = () => {
+      const dbx = req.result
+      if(!dbx.objectStoreNames.contains('tracks')){
+        dbx.createObjectStore('tracks', {keyPath:'id'})
+      }
+    }
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+async function initDb(){
+  db = await openDb()
+}
+function tx(store, mode){
+  return db.transaction(store, mode).objectStore(store)
+}
+async function getAllTracks(){
+  return new Promise((resolve,reject) => {
+    const req = tx('tracks', 'readonly').getAll()
+    req.onsuccess = () => resolve(req.result || [])
+    req.onerror = () => reject(req.error)
+  })
+}
+async function putTrack(track){
+  return new Promise((resolve,reject) => {
+    const req = tx('tracks', 'readwrite').put(track)
+    req.onsuccess = () => resolve()
+    req.onerror = () => reject(req.error)
+  })
+}
+async function deleteTrack(id){
+  return new Promise((resolve,reject) => {
+    const req = tx('tracks', 'readwrite').delete(id)
+    req.onsuccess = () => resolve()
+    req.onerror = () => reject(req.error)
+  })
+}
+async function clearTracks(){
+  return new Promise((resolve,reject) => {
+    const req = tx('tracks', 'readwrite').clear()
+    req.onsuccess = () => resolve()
+    req.onerror = () => reject(req.error)
+  })
+}
+async function bootstrap(){
+  bindRefs()
+  loadLocal()
+  await initDb()
+  state.tracks = await getAllTracks()
+  initAudio()
+  attachEvents()
+  renderAll()
+  restoreQueue()
+  updateClock()
+  setInterval(updateClock, 1000)
+}
+function bindRefs(){
+  [
+    'fileInput','importBtn','settingsBtn','searchInput','voiceBtn','tabBar','trackList','playlistArea','sectionTitle',
+    'npQuality','npTitle','npArtist','badgeFormat','badgeEq','badgeMode','currentTime','totalTime','seekFill','seekBar',
+    'playBtn','prevBtn','nextBtn','repeatBtn','shuffleBtn','favBtn','queueBtn',
+    'statTracks','statDuration','statPlaylists','newPlaylistBtn','clearDbBtn','audio','visualizer','sheet','sheetTitle','sheetContent','closeSheet',
+    'heroCover'
+  ].forEach(id => refs[id] = $(id))
+  
+  // حفظ مرجع منطقة التمرير
+  refs.contentArea = document.querySelector('.content')
+}
+function initAudio(){
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+  sourceNode = audioCtx.createMediaElementSource(refs.audio)
+  filters = bands.map((f, i) => {
+    const filter = audioCtx.createBiquadFilter()
+    filter.type = i === 0 ? 'lowshelf' : i === bands.length - 1 ? 'highshelf' : 'peaking'
+    filter.frequency.value = f
+    filter.Q.value = 1
+    filter.gain.value = state.settings.eq[i] || 0
+    return filter
+  })
+  analyser = audioCtx.createAnalyser()
+  analyser.fftSize = 256
+  gainNode = audioCtx.createGain()
+  gainNode.gain.value = state.settings.volume
+  sourceNode.connect(filters[0])
+  for(let i = 0; i < filters.length - 1; i++) filters[i].connect(filters[i+1])
+  filters[filters.length - 1].connect(gainNode)
+  gainNode.connect(analyser)
+  analyser.connect(audioCtx.destination)
+  drawVisualizer()
+}
+function attachEvents(){
+  refs.importBtn.onclick = () => refs.fileInput.click()
+  refs.fileInput.onchange = handleImport
+  refs.searchInput.oninput = (e) => {
+    state.ui.query = e.target.value.trim().toLowerCase()
+    renderLists()
+    saveLocal()
+  }
+  refs.tabBar.onclick = (e) => {
+    const b = e.target.closest('.chip')
+    if(!b) return
+    state.ui.filter = b.dataset.filter
+    syncFilterUi()
+    renderLists()
+    saveLocal()
+    // تمرير الشاشة للأسفل بسلاسة عند تغيير القوائم
+    refs.contentArea.scrollTo({
+      top: refs.sectionTitle.offsetTop - 20,
+      behavior: 'smooth'
+    })
+  }
+  refs.playBtn.onclick = togglePlay
+  refs.prevBtn.onclick = prevTrack
+  refs.nextBtn.onclick = nextTrack
+  refs.repeatBtn.onclick = cycleRepeat
+  refs.shuffleBtn.onclick = () => {
+    state.settings.shuffle = !state.settings.shuffle
+    updateButtons()
+    buildQueue(true)
+    saveLocal()
+    toast(state.settings.shuffle ? 'تم تفعيل الخلط' : 'تم إيقاف الخلط')
+  }
+  refs.favBtn.onclick = toggleFavoriteCurrent
+  refs.queueBtn.onclick = openQueueSheet
+  refs.newPlaylistBtn.onclick = openNewPlaylistSheet
+  refs.clearDbBtn.onclick = async () => {
+    if(!confirm('مسح جميع الملفات المحفوظة محليًا؟')) return
+    await clearTracks()
+    state.tracks = []
+    state.playlists.forEach(p => p.trackIds = [])
+    state.ui.queue = []
+    state.ui.currentTrackId = null
+    refs.audio.pause()
+    if(objectUrl) URL.revokeObjectURL(objectUrl)
+    objectUrl = null
+    renderAll()
+    saveLocal()
+    toast('تم مسح المكتبة')
+  }
+  refs.settingsBtn.onclick = openSoundSheet
+  refs.voiceBtn.onclick = openQuickActions
+  refs.seekBar.onclick = (e) => {
+    const rect = refs.seekBar.getBoundingClientRect()
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+    if(refs.audio.duration) refs.audio.currentTime = refs.audio.duration * ratio
+  }
+  refs.audio.addEventListener('timeupdate', onTimeUpdate)
+  refs.audio.addEventListener('loadedmetadata', onTimeUpdate)
+  refs.audio.addEventListener('ended', onEnded)
+  refs.audio.addEventListener('play', async () => {
+    updateButtons()
+    if(audioCtx.state === 'suspended') await audioCtx.resume()
+    const track = currentTrack()
+    if(track && playMarkedForId !== track.id){
+      playMarkedForId = track.id
+      await markPlayed()
+      state.tracks = await getAllTracks()
+      renderStats()
+      renderLists()
+    }
+  })
+  refs.audio.addEventListener('pause', updateButtons)
+  $('closeSheet').onclick = closeSheet
+  refs.sheet.onclick = (e) => { if(e.target === refs.sheet) closeSheet() }
+  
+  // برمجة أزرار التصفح السفلي (الرئيسية والمكتبة)
+  document.querySelector('.nav .wrap').onclick = (e) => {
+    const btn = e.target.closest('button')
+    if(!btn) return
+    const nav = btn.dataset.nav
+    
+    // الأزرار التي تفتح قوائم منبثقة لا تغير التبويب النشط
+    if (nav === 'queue') { openQueueSheet(); return; }
+    if (nav === 'sound') { openSoundSheet(); return; }
+    
+    // تلوين الزر النشط
+    document.querySelectorAll('.nav .wrap button[data-nav="home"], .nav .wrap button[data-nav="library"]').forEach(x => {
+        x.classList.toggle('active', x === btn)
+    })
+
+    if (nav === 'library') { 
+      state.ui.filter = 'all'; 
+      syncFilterUi(); 
+      renderLists(); 
+      refs.contentArea.scrollTo({
+        top: refs.sectionTitle.offsetTop - 20, 
+        behavior: 'smooth'
+      });
+    }
+    if (nav === 'home') { 
+      refs.contentArea.scrollTo({
+        top: 0, 
+        behavior: 'smooth'
+      });
+      closeSheet();
+    }
+  }
+}
+function updateClock(){
+  const now = new Date()
+  const h = now.getHours().toString().padStart(2,'0')
+  const m = now.getMinutes().toString().padStart(2,'0')
+  $('clockText').textContent = h + ':' + m
+  if(state.ui.sleepAt && Date.now() >= state.ui.sleepAt){
+    refs.audio.pause()
+    state.ui.sleepAt = null
+    saveLocal()
+    toast('انتهى مؤقت النوم')
+  }
+}
+async function handleImport(e){
+  const files = Array.from(e.target.files || [])
+  if(!files.length) return
+  let count = 0
+  for(const file of files){
+    const parsed = titleFromFile(file.name)
+    const track = {
+      id: uid(),
+      name: file.name,
+      title: parsed.title,
+      artist: parsed.artist,
+      album: 'Local Import',
+      ext: extOf(file.name),
+      type: file.type || 'audio',
+      size: file.size || 0,
+      duration: 0,
+      favorite: false,
+      playCount: 0,
+      lastPlayedAt: 0,
+      addedAt: Date.now(),
+      blob: file
+    }
+    await putTrack(track)
+    count++
+  }
+  state.tracks = await getAllTracks()
+  if(!state.ui.currentTrackId && state.tracks[0]){
+    buildQueue(false)
+    state.ui.currentTrackId = state.ui.queue[0] || state.tracks[0].id
+    state.ui.currentIndex = 0
+    await loadCurrent(false)
+  }
+  renderAll()
+  saveLocal()
+  refs.fileInput.value = ''
+  toast('تم استيراد ' + count + ' ملف')
+}
+function restoreQueue(){
+  buildQueue(false)
+  if(state.ui.currentTrackId && state.tracks.some(t => t.id === state.ui.currentTrackId)){
+    loadCurrent(false)
+  }else if(state.tracks[0]){
+    state.ui.currentTrackId = state.ui.queue[0] || state.tracks[0].id
+    state.ui.currentIndex = 0
+    loadCurrent(false)
+  }
+}
+function currentTrack(){
+  return state.tracks.find(t => t.id === state.ui.currentTrackId) || null
+}
+function buildQueue(keepCurrent){
+  let tracks = filteredTracks(true)
+  if(!tracks.length) tracks = state.tracks.slice()
+  const ids = tracks.map(t => t.id)
+  if(state.settings.shuffle){
+    for(let i = ids.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1))
+      const temp = ids[i]
+      ids[i] = ids[j]
+      ids[j] = temp
+    }
+  }
+  const currentId = state.ui.currentTrackId
+  state.ui.queue = ids
+  if(keepCurrent && currentId){
+    const idx = ids.indexOf(currentId)
+    state.ui.currentIndex = idx >= 0 ? idx : 0
+  }else{
+    state.ui.currentIndex = 0
+  }
+}
+function filteredTracks(ignoreSearch){
+  let list = state.tracks.slice().sort((a,b) => b.addedAt - a.addedAt)
+  const q = ignoreSearch ? '' : state.ui.query
+  if(q){
+    list = list.filter(t => [t.title,t.artist,t.album,t.ext,t.name].join(' ').toLowerCase().includes(q))
+  }
+  switch(state.ui.filter){
+    case 'favorites':
+      list = list.filter(t => t.favorite)
+      break
+    case 'recent':
+      list = list.filter(t => t.lastPlayedAt).sort((a,b) => b.lastPlayedAt - a.lastPlayedAt)
+      break
+    case 'playlists':
+      break
+  }
+  return list
+}
+function renderAll(){
+  syncFilterUi()
+  renderStats()
+  renderLists()
+  renderNowPlaying()
+  updateButtons()
+}
+function syncFilterUi(){
+  document.querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x.dataset.filter === state.ui.filter))
+}
+function renderStats(){
+  refs.statTracks.textContent = String(state.tracks.length)
+  refs.statPlaylists.textContent = String(state.playlists.length)
+  const total = state.tracks.reduce((sum, t) => sum + (t.duration || 0), 0)
+  refs.statDuration.textContent = formatTime(total)
+}
+function renderLists(){
+  refs.sectionTitle.textContent = state.ui.filter === 'playlists' ? 'قوائم التشغيل' : 'المكتبة'
+  const showPlaylists = state.ui.filter === 'playlists'
+  refs.playlistArea.classList.toggle('hidden', !showPlaylists)
+  refs.trackList.classList.toggle('hidden', false)
+  if(showPlaylists){
+    renderPlaylists()
+    const allIds = new Set()
+    state.playlists.forEach(p => p.trackIds.forEach(id => allIds.add(id)))
+    const looseTracks = state.tracks.filter(t => !allIds.has(t.id))
+    renderTracks(looseTracks, 'المسارات غير المضافة إلى قوائم')
+  }else{
+    refs.playlistArea.innerHTML = ''
+    renderTracks(filteredTracks(false))
+  }
+}
+function renderPlaylists(){
+  if(!state.playlists.length){
+    refs.playlistArea.innerHTML = '<div class="empty">لا توجد قوائم تشغيل بعد.<br>أنشئ قائمة جديدة ثم أضف إليها الأغاني.</div>'
+    return
+  }
+  refs.playlistArea.innerHTML = state.playlists.map(p => {
+    const count = p.trackIds.length
+    return `
+      <div class="track" data-playlist-id="${p.id}">
+        <div class="thumb"></div>
+        <div class="main">
+          <h4>${escapeHtml(p.name)}</h4>
+          <p>${count} مسار</p>
+        </div>
+        <div class="meta">
+          <button class="btn" style="padding: 8px 16px; font-size: 13px;" data-open-playlist="${p.id}">فتح</button>
+          <button class="btn" style="padding: 8px 16px; font-size: 13px;" data-delete-playlist="${p.id}">حذف</button>
+        </div>
+      </div>
+    `
+  }).join('')
+  refs.playlistArea.querySelectorAll('[data-open-playlist]').forEach(btn => {
+    btn.onclick = () => openPlaylistSheet(btn.dataset.openPlaylist)
+  })
+  refs.playlistArea.querySelectorAll('[data-delete-playlist]').forEach(btn => {
+    btn.onclick = () => deletePlaylist(btn.dataset.deletePlaylist)
+  })
+}
+function renderTracks(tracks, subtitle){
+  if(!tracks.length){
+    let emptyMsg = 'المكتبة فارغة أو لا توجد نتائج.<br>أضف ملفات صوتية من جهازك أولاً.';
+    if(state.ui.filter === 'favorites') emptyMsg = 'قائمة المفضلة فارغة.<br>اضغط على أيقونة ❤️ لإضافة مقاطعك.';
+    if(state.ui.filter === 'recent') emptyMsg = 'لم تقم بالاستماع لأي مقطع مؤخراً.';
+    
+    refs.trackList.innerHTML = `<div class="empty">${emptyMsg}</div>`
+    return
+  }
+  refs.trackList.innerHTML = tracks.map(track => {
+    const active = state.ui.currentTrackId === track.id
+    const quality = isHiRes(track) ? 'Hi-Res' : isLossless(track) ? 'Lossless' : track.ext.toUpperCase() || 'AUDIO'
+    return `
+      <div class="track ${active ? 'active' : ''}" data-track-id="${track.id}">
+        <div class="thumb"></div>
+        <div class="main">
+          <h4>${escapeHtml(track.title || track.name)}</h4>
+          <p>${escapeHtml(track.artist || 'فنان غير معروف')} · ${escapeHtml(track.ext.toUpperCase())} · ${formatTime(track.duration || 0)}</p>
+        </div>
+        <div class="meta">
+          <span class="q">${quality}</span>
+          <button class="btn" style="padding: 6px 12px; font-size: 16px; border-radius: 12px;" data-menu-id="${track.id}">⋯</button>
+        </div>
+      </div>
+    `
+  }).join('')
+  refs.trackList.querySelectorAll('[data-track-id]').forEach(item => {
+    item.onclick = (e) => {
+      if(e.target.closest('[data-menu-id]')) return
+      const id = item.dataset.trackId
+      state.ui.currentTrackId = id
+      const idx = state.ui.queue.indexOf(id)
+      if(idx >= 0) state.ui.currentIndex = idx
+      else {
+        buildQueue(false)
+        state.ui.currentIndex = state.ui.queue.indexOf(id)
+      }
+      loadCurrent(true)
+    }
+  })
+  refs.trackList.querySelectorAll('[data-menu-id]').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation()
+      openTrackMenu(btn.dataset.menuId)
+    }
+  })
+}
+async function loadCurrent(autoPlay){
+  const track = currentTrack()
+  if(!track) return renderNowPlaying()
+  if(objectUrl) URL.revokeObjectURL(objectUrl)
+  objectUrl = URL.createObjectURL(track.blob)
+  refs.audio.src = objectUrl
+  refs.audio.playbackRate = state.settings.speed
+  refs.audio.volume = 1
+  gainNode.gain.value = state.settings.volume
+  renderNowPlaying()
+  renderLists()
+  saveLocal()
+  if(autoPlay){
+    try{
+      if(audioCtx.state === 'suspended') await audioCtx.resume()
+      await refs.audio.play()
+    }catch(e){
+      toast('اضغط تشغيل لبدء الصوت')
+    }
+  }
+}
+function renderNowPlaying(){
+  const track = currentTrack()
+  const none = !track
+  refs.npTitle.textContent = none ? 'لا توجد أغنية قيد التشغيل' : (track.title || track.name)
+  refs.npArtist.textContent = none ? 'أضف ملفات صوتية لتفعيل المكتبة' : ((track.artist || 'فنان غير معروف') + ' · ' + (track.album || 'Local Import'))
+  refs.npQuality.textContent = none ? 'جاهز للاستيراد والتشغيل' : qualityText(track)
+  refs.badgeFormat.textContent = none ? 'Local Audio' : (track.ext || 'audio').toUpperCase()
+  refs.badgeEq.textContent = eqBadgeText()
+  refs.badgeMode.textContent = state.ui.ab.enabled ? 'A-B Repeat' : (state.settings.shuffle ? 'Shuffle On' : 'Visualizer')
+  refs.favBtn.textContent = track && track.favorite ? '♥' : '♡'
+  refs.favBtn.style.color = track && track.favorite ? 'var(--danger)' : 'var(--text)'
+}
+function eqBadgeText(){
+  const changed = state.settings.eq.some(v => Math.abs(v) > 0.1)
+  return changed ? 'EQ Custom' : 'EQ Flat'
+}
+function qualityText(track){
+  const pieces = []
+  if(isHiRes(track)) pieces.push('Hi-Res')
+  else if(isLossless(track)) pieces.push('Lossless')
+  pieces.push((track.ext || 'audio').toUpperCase())
+  pieces.push(sizeText(track.size))
+  return pieces.join(' · ')
+}
+function sizeText(bytes){
+  if(!bytes) return '0 MB'
+  const mb = bytes / (1024 * 1024)
+  if(mb < 1024) return mb.toFixed(1) + ' MB'
+  return (mb / 1024).toFixed(2) + ' GB'
+}
+function updateButtons(){
+  const playing = !refs.audio.paused && !refs.audio.ended
+  refs.playBtn.textContent = playing ? '⏸' : '▶'
+  refs.playBtn.style.paddingLeft = playing ? '0' : '4px'
+  refs.shuffleBtn.style.opacity = state.settings.shuffle ? '1' : '.5'
+  refs.repeatBtn.textContent = state.settings.repeat === 'one' ? '🔂' : state.settings.repeat === 'off' ? '↻' : '🔁'
+  refs.repeatBtn.style.opacity = state.settings.repeat === 'off' ? '.5' : '1'
+}
+async function togglePlay(){
+  if(!currentTrack()){
+    if(state.tracks[0]){
+      buildQueue(false)
+      state.ui.currentTrackId = state.ui.queue[0]
+      state.ui.currentIndex = 0
+      await loadCurrent(false)
+    }else{
+      refs.fileInput.click()
+      return
+    }
+  }
+  try{
+    if(refs.audio.paused){
+      if(audioCtx.state === 'suspended') await audioCtx.resume()
+      await refs.audio.play()
+    }else{
+      refs.audio.pause()
+    }
+  }catch(e){
+    toast('تعذر بدء التشغيل')
+  }
+}
+function cycleRepeat(){
+  const modes = ['all','one','off']
+  const idx = modes.indexOf(state.settings.repeat)
+  state.settings.repeat = modes[(idx + 1) % modes.length]
+  updateButtons()
+  saveLocal()
+  const map = {all:'تكرار الكل', one:'تكرار المقطع', off:'إيقاف التكرار'}
+  toast(map[state.settings.repeat])
+}
+async function prevTrack(){
+  if(!state.ui.queue.length) buildQueue(false)
+  if(!state.ui.queue.length) return
+  state.ui.currentIndex = (state.ui.currentIndex - 1 + state.ui.queue.length) % state.ui.queue.length
+  state.ui.currentTrackId = state.ui.queue[state.ui.currentIndex]
+  await loadCurrent(true)
+}
+async function nextTrack(){
+  if(!state.ui.queue.length) buildQueue(false)
+  if(!state.ui.queue.length) return
+  if(state.settings.repeat === 'one'){
+    refs.audio.currentTime = 0
+    refs.audio.play()
+    return
+  }
+  if(state.ui.currentIndex >= state.ui.queue.length - 1){
+    if(state.settings.repeat === 'off'){
+      refs.audio.pause()
+      refs.audio.currentTime = 0
+      updateButtons()
+      return
+    }
+    state.ui.currentIndex = 0
+  }else{
+    state.ui.currentIndex += 1
+  }
+  state.ui.currentTrackId = state.ui.queue[state.ui.currentIndex]
+  await loadCurrent(true)
+}
+async function onEnded(){
+  await nextTrack()
+}
+async function onTimeUpdate(){
+  const dur = refs.audio.duration || 0
+  const cur = refs.audio.currentTime || 0
+  refs.currentTime.textContent = formatTime(cur)
+  refs.totalTime.textContent = formatTime(dur)
+  const ratio = dur ? (cur / dur) * 100 : 0
+  refs.seekFill.style.width = ratio + '%'
+  if(state.ui.ab.enabled){
+    if(state.ui.ab.b != null && cur >= state.ui.ab.b){
+      refs.audio.currentTime = state.ui.ab.a || 0
+    }
+  }
+  const track = currentTrack()
+  if(track && dur && (!track.duration || Math.abs(track.duration - dur) > 1)){
+    track.duration = dur
+    await putTrack(track)
+    state.tracks = await getAllTracks()
+    renderStats()
+    renderLists()
+  }
+}
+async function toggleFavoriteCurrent(){
+  const track = currentTrack()
+  if(!track) return
+  track.favorite = !track.favorite
+  await putTrack(track)
+  state.tracks = await getAllTracks()
+  renderNowPlaying()
+  renderLists()
+  toast(track.favorite ? 'تمت الإضافة إلى المفضلة' : 'تمت الإزالة من المفضلة')
+}
+async function markPlayed(){
+  const track = currentTrack()
+  if(!track) return
+  track.playCount = (track.playCount || 0) + 1
+  track.lastPlayedAt = Date.now()
+  await putTrack(track)
+}
+
+let playMarkedForId = null
+
+function escapeHtml(value){
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+function closeSheet(){
+  refs.sheet.classList.remove('open')
+}
+function openSheet(title, html){
+  refs.sheetTitle.textContent = title
+  refs.sheetContent.innerHTML = html
+  refs.sheet.classList.add('open')
+}
+function openQuickActions(){
+  openSheet('اختصارات المطور', `
+    <div class="stack">
+      <div class="row2">
+        <button class="btn primary" id="qaImport">استيراد ملفات</button>
+        <button class="btn" id="qaEq">إعدادات الصوت</button>
+      </div>
+      <div class="row2">
+        <button class="btn" id="qaQueue">عرض قائمة الانتظار</button>
+        <button class="btn" id="qaPlaylist">قائمة جديدة</button>
+      </div>
+      <div class="taglist" style="justify-content: center; margin-top: 8px;">
+        <span class="badge">MP3</span> <span class="badge">WAV</span> <span class="badge">FLAC</span>
+        <span class="badge">AAC</span> <span class="badge">M4A</span> <span class="badge">OGG</span>
+      </div>
+    </div>
+  `)
+  $('qaImport').onclick = () => { closeSheet(); refs.fileInput.click() }
+  $('qaEq').onclick = openSoundSheet
+  $('qaQueue').onclick = openQueueSheet
+  $('qaPlaylist').onclick = openNewPlaylistSheet
+}
+function openSoundSheet(){
+  openSheet('الصوت والتحكم الاحترافي', `
+    <div class="stack">
+      <div class="row2">
+        <div class="tool">
+          <b>مستوى الصوت</b>
+          <div class="range-row"><span>0%</span><input id="volRange" type="range" min="0" max="1" step="0.01" value="${state.settings.volume}"><span id="volVal">${Math.round(state.settings.volume * 100)}%</span></div>
+        </div>
+        <div class="tool">
+          <b>سرعة التشغيل</b>
+          <div class="range-row"><span>0.5x</span><input id="speedRange" type="range" min="0.5" max="2" step="0.05" value="${state.settings.speed}"><span id="speedVal">${state.settings.speed.toFixed(2)}x</span></div>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="tool">
+          <b>تكرار A-B</b>
+          <div class="row" style="margin-top:12px">
+            <button class="btn" style="flex:1; font-size:13px; padding:10px;" id="setA">نقطة A</button>
+            <button class="btn" style="flex:1; font-size:13px; padding:10px;" id="setB">نقطة B</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn ${state.ui.ab.enabled ? 'primary' : ''}" style="flex:1; font-size:13px; padding:10px;" id="toggleAB">${state.ui.ab.enabled ? 'مفعل' : 'تفعيل'}</button>
+            <button class="btn" style="flex:1; font-size:13px; padding:10px;" id="clearAB">مسح</button>
+          </div>
+          <div class="muted" style="margin-top:10px;font-size:12px; text-align:center;">A: ${state.ui.ab.a == null ? '--:--' : formatTime(state.ui.ab.a)} | B: ${state.ui.ab.b == null ? '--:--' : formatTime(state.ui.ab.b)}</div>
+        </div>
+
+        <div class="tool">
+          <b>مؤقت النوم</b>
+          <div class="preset-row" style="margin-top:12px; justify-content: center;">
+            <button class="preset" data-sleep="0">إلغاء</button>
+            <button class="preset" data-sleep="15">15 د</button>
+            <button class="preset" data-sleep="30">30 د</button>
+            <button class="preset" data-sleep="60">60 د</button>
+          </div>
+          <div class="muted" style="margin-top:10px;font-size:12px; text-align:center;">${state.ui.sleepAt ? 'ينتهي في ' + new Date(state.ui.sleepAt).toLocaleTimeString('ar') : 'غير مفعل حالياً'}</div>
+        </div>
+      </div>
+
+      <div class="tool">
+        <b>جاهزية الصوت (EQ Presets)</b>
+        <div class="preset-row" style="margin-top:10px">
+          <button class="preset" data-preset="flat">Flat</button>
+          <button class="preset" data-preset="bass">Bass</button>
+          <button class="preset" data-preset="vocal">Vocal</button>
+          <button class="preset" data-preset="bright">Bright</button>
+          <button class="preset" data-preset="night">Night</button>
+        </div>
+      </div>
+
+      <div class="eq-list">
+        ${bands.map((b, i) => `
+          <div class="range-row">
+            <span>${b >= 1000 ? (b / 1000) + 'k' : b}</span>
+            <input type="range" min="-12" max="12" step="0.5" value="${state.settings.eq[i]}" data-band-index="${i}">
+            <span id="bandVal${i}" style="text-align: left;">${Number(state.settings.eq[i]).toFixed(1)} dB</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `)
+
+  $('volRange').oninput = (e) => {
+    state.settings.volume = Number(e.target.value)
+    gainNode.gain.value = state.settings.volume
+    $('volVal').textContent = Math.round(state.settings.volume * 100) + '%'
+    saveLocal()
+  }
+  $('speedRange').oninput = (e) => {
+    state.settings.speed = Number(e.target.value)
+    refs.audio.playbackRate = state.settings.speed
+    $('speedVal').textContent = state.settings.speed.toFixed(2) + 'x'
+    saveLocal()
+  }
+  document.querySelectorAll('[data-band-index]').forEach(input => {
+    input.oninput = (e) => {
+      const i = Number(e.target.dataset.bandIndex)
+      const v = Number(e.target.value)
+      state.settings.eq[i] = v
+      filters[i].gain.value = v
+      $('bandVal' + i).textContent = v.toFixed(1) + ' dB'
+      renderNowPlaying()
+      saveLocal()
+    }
+  })
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.onclick = () => {
+      const arr = presets[btn.dataset.preset]
+      if(!arr) return
+      arr.forEach((v, i) => {
+        state.settings.eq[i] = v
+        filters[i].gain.value = v
+      })
+      saveLocal()
+      openSoundSheet()
+      renderNowPlaying()
+      toast('تم تطبيق نمط: ' + btn.dataset.preset)
+    }
+  })
+  $('setA').onclick = () => {
+    state.ui.ab.a = refs.audio.currentTime || 0
+    saveLocal()
+    openSoundSheet()
+  }
+  $('setB').onclick = () => {
+    state.ui.ab.b = refs.audio.currentTime || 0
+    saveLocal()
+    openSoundSheet()
+  }
+  $('toggleAB').onclick = () => {
+    state.ui.ab.enabled = !state.ui.ab.enabled
+    if(state.ui.ab.a == null) state.ui.ab.a = 0
+    if(state.ui.ab.b == null && refs.audio.duration) state.ui.ab.b = refs.audio.duration
+    renderNowPlaying()
+    saveLocal()
+    openSoundSheet()
+  }
+  $('clearAB').onclick = () => {
+    state.ui.ab = {enabled:false,a:null,b:null}
+    renderNowPlaying()
+    saveLocal()
+    openSoundSheet()
+  }
+  document.querySelectorAll('[data-sleep]').forEach(btn => {
+    btn.onclick = () => {
+      const min = Number(btn.dataset.sleep)
+      state.ui.sleepAt = min ? Date.now() + min * 60000 : null
+      saveLocal()
+      openSoundSheet()
+      toast(min ? 'تم ضبط مؤقت النوم' : 'تم إلغاء مؤقت النوم')
+    }
+  })
+}
+function openQueueSheet(){
+  const queueTracks = state.ui.queue.map(id => state.tracks.find(t => t.id === id)).filter(Boolean)
+  openSheet('قائمة الانتظار الحالية', `
+    <div class="stack">
+      <div class="notice">ترتيب التشغيل الحالي ${state.settings.shuffle ? 'مع الخلط العشوائي' : 'حسب الإضافة'}.</div>
+      <div class="row2">
+        <button class="btn" id="rebuildQueue">إعادة ترتيب</button>
+        <button class="btn" id="clearQueueKeep">تحديث للموجود</button>
+      </div>
+      <div class="list">
+        ${queueTracks.length ? queueTracks.map((track, idx) => `
+          <div class="track ${idx === state.ui.currentIndex ? 'active' : ''}">
+            <div class="thumb"></div>
+            <div class="main">
+              <h4>${escapeHtml(track.title)}</h4>
+              <p>${escapeHtml(track.artist)} · ${track.ext.toUpperCase()} · ${formatTime(track.duration || 0)}</p>
+            </div>
+            <div class="meta">
+              <button class="btn" style="padding:8px 14px; font-size:12px;" data-queue-play="${track.id}">تشغيل</button>
+              <button class="btn" style="padding:8px 14px; font-size:12px;" data-queue-remove="${track.id}">إزالة</button>
+            </div>
+          </div>
+        `).join('') : '<div class="empty">القائمة فارغة تماماً</div>'}
+      </div>
+    </div>
+  `)
+  $('rebuildQueue').onclick = () => {
+    buildQueue(true)
+    openQueueSheet()
+    saveLocal()
+  }
+  $('clearQueueKeep').onclick = () => {
+    buildQueue(false)
+    openQueueSheet()
+    saveLocal()
+  }
+  document.querySelectorAll('[data-queue-play]').forEach(btn => {
+    btn.onclick = async () => {
+      state.ui.currentTrackId = btn.dataset.queuePlay
+      state.ui.currentIndex = state.ui.queue.indexOf(btn.dataset.queuePlay)
+      await loadCurrent(true)
+      closeSheet()
+    }
+  })
+  document.querySelectorAll('[data-queue-remove]').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.queueRemove
+      state.ui.queue = state.ui.queue.filter(x => x !== id)
+      if(state.ui.currentIndex >= state.ui.queue.length) state.ui.currentIndex = Math.max(0, state.ui.queue.length - 1)
+      saveLocal()
+      openQueueSheet()
+    }
+  })
+}
+function openNewPlaylistSheet(){
+  openSheet('قائمة تشغيل جديدة', `
+    <div class="stack">
+      <input class="field" id="playlistName" placeholder="اكتب اسم القائمة هنا...">
+      <button class="btn primary" id="createPlaylistBtn">إنشاء القائمة</button>
+    </div>
+  `)
+  $('createPlaylistBtn').onclick = () => {
+    const name = $('playlistName').value.trim()
+    if(!name) return toast('الرجاء كتابة اسم للقائمة')
+    state.playlists.unshift({id: uid(), name, trackIds: []})
+    saveLocal()
+    renderAll()
+    closeSheet()
+    toast('تم إنشاء القائمة بنجاح')
+  }
+}
+function deletePlaylist(id){
+  const p = state.playlists.find(x => x.id === id)
+  if(!p) return
+  if(!confirm('هل أنت متأكد من حذف قائمة "' + p.name + '" ؟')) return
+  state.playlists = state.playlists.filter(x => x.id !== id)
+  saveLocal()
+  renderAll()
+  toast('تم حذف القائمة')
+}
+function openPlaylistSheet(id){
+  const p = state.playlists.find(x => x.id === id)
+  if(!p) return
+  openSheet('تعديل: ' + p.name, `
+    <div class="stack">
+      <input class="field" id="playlistRename" value="${escapeHtml(p.name)}">
+      <div class="row2">
+        <button class="btn" id="renamePlaylistBtn">تحديث الاسم</button>
+        <button class="btn primary" id="fillWithFavorites">إضافة المفضلة</button>
+      </div>
+      <div class="list" style="margin-top: 8px;">
+        ${state.tracks.length ? state.tracks.map(track => `
+          <label class="track" style="cursor: pointer;">
+            <div class="thumb"></div>
+            <div class="main">
+              <h4>${escapeHtml(track.title)}</h4>
+              <p>${escapeHtml(track.artist)} · ${track.ext.toUpperCase()}</p>
+            </div>
+            <div class="meta" style="justify-content: center;">
+              <input type="checkbox" style="width:20px; height:20px; accent-color: var(--accent);" data-playlist-track="${track.id}" ${p.trackIds.includes(track.id) ? 'checked' : ''}>
+            </div>
+          </label>
+        `).join('') : '<div class="empty">لا توجد ملفات صوتية لإضافتها.</div>'}
+      </div>
+      <button class="btn primary" id="savePlaylistTracks">حفظ القائمة</button>
+    </div>
+  `)
+  $('renamePlaylistBtn').onclick = () => {
+    p.name = $('playlistRename').value.trim() || p.name
+    saveLocal()
+    openPlaylistSheet(id)
+    renderAll()
+  }
+  $('fillWithFavorites').onclick = () => {
+    const favIds = state.tracks.filter(t => t.favorite).map(t => t.id)
+    p.trackIds = Array.from(new Set(p.trackIds.concat(favIds)))
+    saveLocal()
+    openPlaylistSheet(id)
+    renderAll()
+  }
+  $('savePlaylistTracks').onclick = () => {
+    p.trackIds = Array.from(document.querySelectorAll('[data-playlist-track]')).filter(x => x.checked).map(x => x.dataset.playlistTrack)
+    saveLocal()
+    renderAll()
+    closeSheet()
+    toast('تم حفظ تعديلات القائمة')
+  }
+}
+function openTrackMenu(id){
+  const track = state.tracks.find(t => t.id === id)
+  if(!track) return
+  openSheet('خيارات الملف', `
+    <div class="stack">
+      <div class="notice" style="text-align: center;"><b>${escapeHtml(track.title)}</b><br><span style="opacity:0.8; font-size: 12px;">${escapeHtml(track.artist)} · ${track.ext.toUpperCase()} · ${formatTime(track.duration || 0)}</span></div>
+      <div class="row2">
+        <button class="btn primary" id="tmPlayNow">تشغيل فوراً</button>
+        <button class="btn" id="tmPlayNext">تشغيل تالياً</button>
+      </div>
+      <div class="row2">
+        <button class="btn" id="tmFav">${track.favorite ? 'إزالة من المفضلة 💔' : 'إضافة للمفضلة ❤️'}</button>
+        <button class="btn" id="tmPlaylist">إضافة لقائمة 📋</button>
+      </div>
+      <button class="btn" style="color: var(--danger); background: rgba(255,111,145,0.1);" id="tmDelete">حذف الملف نهائياً</button>
+    </div>
+  `)
+  $('tmPlayNow').onclick = async () => {
+    state.ui.currentTrackId = id
+    const idx = state.ui.queue.indexOf(id)
+    state.ui.currentIndex = idx >= 0 ? idx : 0
+    await loadCurrent(true)
+    closeSheet()
+  }
+  $('tmPlayNext').onclick = () => {
+    const idx = state.ui.currentIndex + 1
+    state.ui.queue = state.ui.queue.filter(x => x !== id)
+    state.ui.queue.splice(idx, 0, id)
+    saveLocal()
+    closeSheet()
+    toast('سيتم تشغيله بعد المقطع الحالي')
+  }
+  $('tmFav').onclick = async () => {
+    track.favorite = !track.favorite
+    await putTrack(track)
+    state.tracks = await getAllTracks()
+    renderAll()
+    closeSheet()
+  }
+  $('tmPlaylist').onclick = () => openAddToPlaylistSheet(id)
+  $('tmDelete').onclick = async () => {
+    if(!confirm('هل أنت متأكد من حذف هذا الملف من التطبيق؟')) return
+    await deleteTrack(id)
+    state.playlists.forEach(p => p.trackIds = p.trackIds.filter(x => x !== id))
+    state.tracks = await getAllTracks()
+    state.ui.queue = state.ui.queue.filter(x => x !== id)
+    if(state.ui.currentTrackId === id){
+      state.ui.currentTrackId = state.ui.queue[state.ui.currentIndex] || state.tracks[0]?.id || null
+      if(state.ui.currentTrackId) await loadCurrent(false)
+      else {
+        refs.audio.pause()
+        refs.audio.removeAttribute('src')
+      }
+    }
+    saveLocal()
+    renderAll()
+    closeSheet()
+    toast('تم حذف الملف بنجاح')
+  }
+}
+function openAddToPlaylistSheet(trackId){
+  openSheet('إضافة إلى قائمة', `
+    <div class="stack">
+      ${state.playlists.length ? state.playlists.map(p => `
+        <button class="btn" style="justify-content: flex-start; padding: 18px;" data-add-to-playlist="${p.id}">📋 ${escapeHtml(p.name)}</button>
+      `).join('') : '<div class="empty">لا تملك أي قوائم تشغيل حالياً.</div>'}
+      <button class="btn primary" id="newPlaylistFromTrack">➕ قائمة جديدة</button>
+    </div>
+  `)
+  document.querySelectorAll('[data-add-to-playlist]').forEach(btn => {
+    btn.onclick = () => {
+      const p = state.playlists.find(x => x.id === btn.dataset.addToPlaylist)
+      if(!p) return
+      p.trackIds = Array.from(new Set(p.trackIds.concat([trackId])))
+      saveLocal()
+      renderAll()
+      closeSheet()
+      toast('تمت الإضافة إلى ' + p.name)
+    }
+  })
+  $('newPlaylistFromTrack').onclick = () => {
+    const name = prompt('اكتب اسم القائمة الجديدة:')
+    if(!name) return
+    state.playlists.unshift({id: uid(), name, trackIds:[trackId]})
+    saveLocal()
+    renderAll()
+    closeSheet()
+    toast('تم إنشاء القائمة وإضافة المقطع')
+  }
+}
+function drawVisualizer(){
+  const canvas = refs.visualizer
+  const ctx = canvas.getContext('2d')
+  function resize(){
+    const rect = canvas.parentElement.getBoundingClientRect()
+    canvas.width = rect.width * devicePixelRatio
+    canvas.height = rect.height * devicePixelRatio
+    canvas.style.width = rect.width + 'px'
+    canvas.style.height = rect.height + 'px'
+    ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)
+  }
+  resize()
+  window.addEventListener('resize', resize)
+  const buffer = new Uint8Array(analyser.frequencyBinCount)
+  function frame(){
+    visId = requestAnimationFrame(frame)
+    analyser.getByteFrequencyData(buffer)
+    const w = canvas.clientWidth
+    const h = canvas.clientHeight
+    ctx.clearRect(0,0,w,h)
+    const bars = 28
+    const step = Math.max(1, Math.floor(buffer.length / bars))
+    const gap = 5
+    const bw = (w - gap * (bars - 1)) / bars
+    for(let i = 0; i < bars; i++){
+      const value = buffer[i * step] / 255
+      const bh = Math.max(8, value * h * 0.95)
+      const x = i * (bw + gap)
+      const y = h - bh
+      const grad = ctx.createLinearGradient(0, y, 0, h)
+      grad.addColorStop(0, '#acd6ff')
+      grad.addColorStop(.55, '#63b1ff')
+      grad.addColorStop(1, '#7b6fff')
+      ctx.fillStyle = grad
+      const r = 6
+      roundRect(ctx, x, y, bw, bh, r)
+      ctx.fill()
+    }
+  }
+  frame()
+}
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+bootstrap()
+</script>
+</body>
+</html>
